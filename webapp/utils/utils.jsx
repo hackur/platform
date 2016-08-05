@@ -12,6 +12,7 @@ import Constants from 'utils/constants.jsx';
 var ActionTypes = Constants.ActionTypes;
 import * as AsyncClient from './async_client.jsx';
 import Client from 'client/web_client.jsx';
+import * as UserAgent from 'utils/user_agent.jsx';
 
 import {browserHistory} from 'react-router/es6';
 import {FormattedMessage} from 'react-intl';
@@ -43,31 +44,6 @@ export function cmdOrCtrlPressed(e) {
     return (isMac() && e.metaKey) || (!isMac() && e.ctrlKey);
 }
 
-export function isChrome() {
-    if (navigator.userAgent.indexOf('Chrome') > -1) {
-        return true;
-    }
-    return false;
-}
-
-export function isSafari() {
-    if (navigator.userAgent.indexOf('Safari') !== -1 && navigator.userAgent.indexOf('Chrome') === -1) {
-        return true;
-    }
-    return false;
-}
-
-export function isIosChrome() {
-    // https://developer.chrome.com/multidevice/user-agent
-    return navigator.userAgent.indexOf('CriOS') !== -1;
-}
-
-export function isMobileApp() {
-    const userAgent = navigator.userAgent;
-
-    return userAgent.indexOf('iPhone') !== -1 && userAgent.indexOf('Safari') === -1 && userAgent.indexOf('CriOS') === -1;
-}
-
 export function isInRole(roles, inRole) {
     var parts = roles.split(' ');
     for (var i = 0; i < parts.length; i++) {
@@ -97,20 +73,6 @@ export function isSystemAdmin(roles) {
     }
 
     return false;
-}
-
-export function getDomainWithOutSub() {
-    var parts = window.location.host.split('.');
-
-    if (parts.length === 1) {
-        if (parts[0].indexOf('dockerhost') > -1) {
-            return 'dockerhost:8065';
-        }
-
-        return 'localhost:8065';
-    }
-
-    return parts[1] + '.' + parts[2];
 }
 
 export function getCookie(name) {
@@ -160,7 +122,7 @@ export function notifyMe(title, body, channel, teamId) {
 var canDing = true;
 
 export function ding() {
-    if (!isBrowserFirefox() && canDing) {
+    if (!UserAgent.isFirefox() && canDing) {
         var audio = new Audio(bing);
         audio.play();
         canDing = false;
@@ -169,18 +131,6 @@ export function ding() {
             return;
         }, 3000);
     }
-}
-
-export function getUrlParameter(sParam) {
-    var sPageURL = window.location.search.substring(1);
-    var sURLVariables = sPageURL.split('&');
-    for (var i = 0; i < sURLVariables.length; i++) {
-        var sParameterName = sURLVariables[i].split('=');
-        if (sParameterName[0] === sParam) {
-            return sParameterName[1];
-        }
-    }
-    return null;
 }
 
 export function getDateForUnixTicks(ticks) {
@@ -575,12 +525,14 @@ export function applyTheme(theme) {
         changeCss('.app__body .sidebar--left .status .online--icon', 'fill:' + theme.onlineIndicator, 1);
         changeCss('.app__body .channel-header__info .status .online--icon', 'fill:' + theme.onlineIndicator, 1);
         changeCss('.app__body .navbar .status .online--icon', 'fill:' + theme.onlineIndicator, 1);
+        changeCss('.more-modal__list .more-modal__image-wrapper.status-online:after', 'background:' + theme.onlineIndicator, 1);
     }
 
     if (theme.awayIndicator) {
         changeCss('.app__body .sidebar--left .status .away--icon', 'fill:' + theme.awayIndicator, 1);
         changeCss('.app__body .channel-header__info .status .away--icon', 'fill:' + theme.awayIndicator, 1);
         changeCss('.app__body .navbar .status .away--icon', 'fill:' + theme.awayIndicator, 1);
+        changeCss('.more-modal__list .more-modal__image-wrapper.status-away:after', 'background:' + theme.awayIndicator, 1);
     }
 
     if (theme.mentionBj) {
@@ -614,7 +566,8 @@ export function applyTheme(theme) {
     }
 
     if (theme.centerChannelColor) {
-        changeCss('.app__body .post-list__arrows', 'fill:' + changeOpacity(theme.centerChannelColor, 0.3), 1);
+        changeCss('.app__body .post-list__arrows, .app__body .post .flag-icon__container', 'fill:' + changeOpacity(theme.centerChannelColor, 0.3), 1);
+        changeCss('.app__body .channel-header__links .icon', 'stroke:' + theme.centerChannelColor, 1);
         changeCss('@media(min-width: 768px){.app__body .post:hover .post__header .col__reply, .app__body .post.post--hovered .post__header .col__reply', 'border-color:' + changeOpacity(theme.centerChannelColor, 0.2), 2);
         changeCss('.app__body .sidebar--left, .app__body .sidebar--right .sidebar--right__header, .app__body .suggestion-list__content .command', 'border-color:' + changeOpacity(theme.centerChannelColor, 0.2), 1);
         changeCss('.app__body .post.post--system .post__body', 'color:' + changeOpacity(theme.centerChannelColor, 0.6), 1);
@@ -686,7 +639,8 @@ export function applyTheme(theme) {
     if (theme.linkColor) {
         changeCss('.app__body a, .app__body a:focus, .app__body a:hover, .app__body .btn, .app__body .btn:focus, .app__body .btn:hover', 'color:' + theme.linkColor, 1);
         changeCss('.app__body .attachment .attachment__container', 'border-left-color:' + changeOpacity(theme.linkColor, 0.5), 1);
-        changeCss('.app__body .post .comment-icon__container, .app__body .post .post__reply', 'fill:' + theme.linkColor, 1);
+        changeCss('.app__body .channel-header__links .icon:hover, .app__body .post .flag-icon__container.visible, .app__body .post .comment-icon__container, .app__body .post .post__reply', 'fill:' + theme.linkColor, 1);
+        changeCss('.app__body .channel-header__links .icon:hover', 'stroke:' + theme.linkColor, 1);
     }
 
     if (theme.buttonBg) {
@@ -775,7 +729,7 @@ export function updateCodeTheme(userTheme) {
         xmlHTTP.open('GET', cssPath, true);
         xmlHTTP.onload = function onLoad() {
             $link.attr('href', cssPath);
-            if (isBrowserFirefox()) {
+            if (UserAgent.isFirefox()) {
                 $link.one('load', () => {
                     changeCss('code.hljs', 'visibility: visible');
                 });
@@ -1013,18 +967,6 @@ export function displayUsernameForUser(user) {
     return username;
 }
 
-//IE10 does not set window.location.origin automatically so this must be called instead when using it
-export function getWindowLocationOrigin() {
-    var windowLocationOrigin = window.location.origin;
-    if (!windowLocationOrigin) {
-        windowLocationOrigin = window.location.protocol + '//' + window.location.hostname;
-        if (window.location.port) {
-            windowLocationOrigin += ':' + window.location.port;
-        }
-    }
-    return windowLocationOrigin;
-}
-
 // Converts a file size in bytes into a human-readable string of the form '123MB'.
 export function fileSizeToString(bytes) {
     // it's unlikely that we'll have files bigger than this
@@ -1043,7 +985,7 @@ export function fileSizeToString(bytes) {
 
 // Converts a filename (like those attached to Post objects) to a url that can be used to retrieve attachments from the server.
 export function getFileUrl(filename) {
-    return getWindowLocationOrigin() + Client.getFilesRoute() + '/get' + filename;
+    return Client.getFilesRoute() + '/get' + filename;
 }
 
 // Gets the name of a file (including extension) from a given url or file path.
@@ -1082,25 +1024,6 @@ export function generateId() {
     });
 
     return id;
-}
-
-export function isBrowserFirefox() {
-    return navigator && navigator.userAgent && navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-}
-
-// Checks if browser is IE10 or IE11
-export function isBrowserIE() {
-    if (window.navigator && window.navigator.userAgent) {
-        var ua = window.navigator.userAgent;
-
-        return ua.indexOf('Trident/7.0') > 0 || ua.indexOf('Trident/6.0') > 0;
-    }
-
-    return false;
-}
-
-export function isBrowserEdge() {
-    return window.navigator && navigator.userAgent && navigator.userAgent.toLowerCase().indexOf('edge') > -1;
 }
 
 export function getDirectChannelName(id, otherId) {
@@ -1149,20 +1072,7 @@ export function importSlack(file, success, error) {
     Client.importSlack(formData, success, error);
 }
 
-export function getTeamURLFromAddressBar() {
-    return window.location.origin + '/' + window.location.pathname.split('/')[1];
-}
-
-export function getTeamNameFromUrl() {
-    return window.location.pathname.split('/')[1];
-}
-
-export function getTeamURLNoOriginFromAddressBar() {
-    return '/' + window.location.pathname.split('/')[1];
-}
-
-export function getShortenedTeamURL() {
-    const teamURL = getTeamURLFromAddressBar();
+export function getShortenedTeamURL(teamURL = '') {
     if (teamURL.length > 35) {
         return teamURL.substring(0, 10) + '...' + teamURL.substring(teamURL.length - 12, teamURL.length) + '/';
     }
@@ -1293,7 +1203,7 @@ export function fillArray(value, length) {
 // Checks if a data transfer contains files not text, folders, etc..
 // Slightly modified from http://stackoverflow.com/questions/6848043/how-do-i-detect-a-file-is-being-dragged-rather-than-a-draggable-element-on-my-pa
 export function isFileTransfer(files) {
-    if (isBrowserIE() || isBrowserEdge()) {
+    if (UserAgent.isInternetExplorer() || UserAgent.isEdge()) {
         return files.types != null && files.types.contains('Files');
     }
 

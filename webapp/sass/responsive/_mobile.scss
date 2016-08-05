@@ -1,6 +1,23 @@
 @charset 'UTF-8';
 
 @media screen and (max-width: 768px) {
+    .prompt {
+        .prompt__heading {
+            display: block;
+
+            > div {
+                &:first-child {
+                    display: block;
+                    margin: 0 0 1em;
+                }
+            }
+        }
+    }
+
+    .scrollbar--view {
+        margin-right: 0 !important;
+    }
+
     #post-list {
         .post-list-holder-by-time {
             .modal-open & {
@@ -64,16 +81,26 @@
     .post {
         .post__dropdown {
             display: inline-block;
-            height: 20px;
-            line-height: 9px;
+            height: 28px;
+            line-height: 21px;
             text-align: center;
             text-decoration: none;
-            width: 20px;
+            width: 28px;
 
             &:after {
                 content: '...';
                 font-size: 20px;
                 top: -3px;
+            }
+        }
+
+        &.same--root {
+            &.same--user {
+                .flag-icon__container {
+                    left: auto;
+                    position: relative;
+                    top: 1px;
+                }
             }
         }
 
@@ -165,7 +192,23 @@
             }
         }
 
+        .star-icon__container {
+            left: auto;
+            position: relative;
+            top: auto;
+
+            &:not(.visible) {
+                display: none;
+            }
+        }
+
         &.same--root {
+            .star-icon__container {
+                left: auto;
+                position: relative;
+                top: auto;
+            }
+
             &.same--user {
                 .post__header {
                     height: auto;
@@ -247,8 +290,9 @@
         }
     }
 
-    .search-help-popover.visible {
-        visibility: hidden;
+    .search-help-popover {
+        left: 55px;
+        max-width: calc(100% - 10px);
     }
 
     .modal-direct-channels {
@@ -393,6 +437,18 @@
                         display: block;
 
                         .settings-content {
+                            .appearance-section {
+                                .theme-elements {
+                                    .element {
+                                        margin-right: 10px;
+
+                                        &:nth-child(2n) {
+                                            margin-right: 10px;
+                                        }
+                                    }
+                                }
+                            }
+
                             &.minimize-settings {
                                 display: block;
                             }
@@ -1075,6 +1131,10 @@
         &.move--right {
             @include translate3d(260px, 0, 0);
         }
+    }
+
+    .integration__icon {
+        display: none;
     }
 }
 

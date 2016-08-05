@@ -175,8 +175,10 @@ export default class AdminSidebar extends React.Component {
     }
 
     render() {
+        let oauthSettings = null;
         let ldapSettings = null;
         let samlSettings = null;
+        let clusterSettings = null;
         let complianceSettings = null;
 
         let license = null;
@@ -184,62 +186,6 @@ export default class AdminSidebar extends React.Component {
         let policy = null;
 
         if (window.mm_config.BuildEnterpriseReady === 'true') {
-            if (window.mm_license.IsLicensed === 'true') {
-                if (global.window.mm_license.LDAP === 'true') {
-                    ldapSettings = (
-                        <AdminSidebarSection
-                            name='ldap'
-                            title={
-                                <FormattedMessage
-                                    id='admin.sidebar.ldap'
-                                    defaultMessage='LDAP'
-                                />
-                            }
-                        />
-                    );
-                }
-
-                if (global.window.mm_license.SAML === 'true') {
-                    samlSettings = (
-                        <AdminSidebarSection
-                            name='saml'
-                            title={
-                                <FormattedMessage
-                                    id='admin.sidebar.saml'
-                                    defaultMessage='SAML'
-                                />
-                            }
-                        />
-                    );
-                }
-
-                if (global.window.mm_license.Compliance === 'true') {
-                    complianceSettings = (
-                        <AdminSidebarSection
-                            name='compliance'
-                            title={
-                                <FormattedMessage
-                                    id='admin.sidebar.compliance'
-                                    defaultMessage='Compliance'
-                                />
-                            }
-                        />
-                    );
-                }
-
-                policy = (
-                    <AdminSidebarSection
-                        name='policy'
-                        title={
-                            <FormattedMessage
-                                id='admin.sidebar.policy'
-                                defaultMessage='Policy'
-                            />
-                        }
-                    />
-                );
-            }
-
             license = (
                 <AdminSidebarSection
                     name='license'
@@ -247,6 +193,100 @@ export default class AdminSidebar extends React.Component {
                         <FormattedMessage
                             id='admin.sidebar.license'
                             defaultMessage='Edition and License'
+                        />
+                    }
+                />
+            );
+        }
+
+        if (window.mm_license.IsLicensed === 'true') {
+            if (global.window.mm_license.LDAP === 'true') {
+                ldapSettings = (
+                    <AdminSidebarSection
+                        name='ldap'
+                        title={
+                            <FormattedMessage
+                                id='admin.sidebar.ldap'
+                                defaultMessage='LDAP'
+                            />
+                        }
+                    />
+                );
+            }
+
+            if (global.window.mm_license.Cluster === 'true') {
+                clusterSettings = (
+                    <AdminSidebarSection
+                        name='cluster'
+                        title={
+                            <FormattedMessage
+                                id='admin.sidebar.cluster'
+                                defaultMessage='High Availability (Beta)'
+                            />
+                        }
+                    />
+                );
+            }
+
+            if (global.window.mm_license.SAML === 'true') {
+                samlSettings = (
+                    <AdminSidebarSection
+                        name='saml'
+                        title={
+                            <FormattedMessage
+                                id='admin.sidebar.saml'
+                                defaultMessage='SAML'
+                            />
+                        }
+                    />
+                );
+            }
+
+            if (global.window.mm_license.Compliance === 'true') {
+                complianceSettings = (
+                    <AdminSidebarSection
+                        name='compliance'
+                        title={
+                            <FormattedMessage
+                                id='admin.sidebar.compliance'
+                                defaultMessage='Compliance'
+                            />
+                        }
+                    />
+                );
+            }
+
+            oauthSettings = (
+                <AdminSidebarSection
+                    name='oauth'
+                    title={
+                        <FormattedMessage
+                            id='admin.sidebar.oauth'
+                            defaultMessage='OAuth 2.0'
+                        />
+                    }
+                />
+            );
+
+            policy = (
+                <AdminSidebarSection
+                    name='policy'
+                    title={
+                        <FormattedMessage
+                            id='admin.sidebar.policy'
+                            defaultMessage='Policy'
+                        />
+                    }
+                />
+            );
+        } else {
+            oauthSettings = (
+                <AdminSidebarSection
+                    name='gitlab'
+                    title={
+                        <FormattedMessage
+                            id='admin.sidebar.gitlab'
+                            defaultMessage='GitLab'
                         />
                     }
                 />
@@ -304,6 +344,16 @@ export default class AdminSidebar extends React.Component {
                                     <FormattedMessage
                                         id='admin.sidebar.view_statistics'
                                         defaultMessage='Site Statistics'
+                                    />
+                                }
+                            />
+                            {audits}
+                            <AdminSidebarSection
+                                name='logs'
+                                title={
+                                    <FormattedMessage
+                                        id='admin.sidebar.logs'
+                                        defaultMessage='Logs'
                                     />
                                 }
                             />
@@ -396,15 +446,7 @@ export default class AdminSidebar extends React.Component {
                                         />
                                     }
                                 />
-                                <AdminSidebarSection
-                                    name='gitlab'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.gitlab'
-                                            defaultMessage='GitLab'
-                                        />
-                                    }
-                                />
+                                {oauthSettings}
                                 {ldapSettings}
                                 {samlSettings}
                             </AdminSidebarSection>
@@ -504,11 +546,11 @@ export default class AdminSidebar extends React.Component {
                                 }
                             >
                                 <AdminSidebarSection
-                                    name='webhooks'
+                                    name='custom'
                                     title={
                                         <FormattedMessage
-                                            id='admin.sidebar.webhooks'
-                                            defaultMessage='Webhooks and Commands'
+                                            id='admin.sidebar.customIntegrations'
+                                            defaultMessage='Custom Integrations'
                                         />
                                     }
                                 />
@@ -629,6 +671,7 @@ export default class AdminSidebar extends React.Component {
                                         />
                                     }
                                 />
+                                {clusterSettings}
                             </AdminSidebarSection>
                         </AdminSidebarCategory>
                         {this.renderTeams()}
@@ -643,16 +686,6 @@ export default class AdminSidebar extends React.Component {
                             }
                         >
                             {license}
-                            {audits}
-                            <AdminSidebarSection
-                                name='logs'
-                                title={
-                                    <FormattedMessage
-                                        id='admin.sidebar.logs'
-                                        defaultMessage='Logs'
-                                    />
-                                }
-                            />
                         </AdminSidebarCategory>
                     </ul>
                 </div>

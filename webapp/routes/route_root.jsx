@@ -9,7 +9,23 @@ import claimAccountRoute from 'routes/route_claim.jsx';
 import createTeamRoute from 'routes/route_create_team.jsx';
 import teamRoute from 'routes/route_team.jsx';
 
+import BrowserStore from 'stores/browser_store.jsx';
 import ErrorStore from 'stores/error_store.jsx';
+import * as UserAgent from 'utils/user_agent.jsx';
+
+function preLogin(nextState, replace, callback) {
+    // redirect to the mobile landing page if the user hasn't seen it before
+    if (window.mm_config.IosAppDownloadLink && UserAgent.isIosWeb() && !BrowserStore.hasSeenLandingPage()) {
+        replace('/get_ios_app');
+        BrowserStore.setLandingPageSeen(true);
+    } else if (window.mm_config.AndroidAppDownloadLink && UserAgent.isAndroidWeb() && !BrowserStore.hasSeenLandingPage()) {
+        replace('/get_android_app');
+        BrowserStore.setLandingPageSeen(true);
+    }
+
+    callback();
+}
+
 function preLoggedIn(nextState, replace, callback) {
     ErrorStore.clearLastError();
     callback();
@@ -28,6 +44,7 @@ export default {
                     [
                         {
                             path: 'login',
+                            onEnter: preLogin,
                             getComponents: (location, callback) => {
                                 System.import('components/login/login_controller.jsx').then(RouteUtils.importComponentSuccess(callback));
                             }
@@ -67,6 +84,18 @@ export default {
                 )
             },
             {
+                path: 'get_ios_app',
+                getComponents: (location, callback) => {
+                    System.import('components/get_ios_app/get_ios_app.jsx').then(RouteUtils.importComponentSuccess(callback));
+                }
+            },
+            {
+                path: 'get_android_app',
+                getComponents: (location, callback) => {
+                    System.import('components/get_android_app/get_android_app.jsx').then(RouteUtils.importComponentSuccess(callback));
+                }
+            },
+            {
                 path: 'error',
                 getComponents: (location, callback) => {
                     System.import('components/error_page.jsx').then(RouteUtils.importComponentSuccess(callback));
@@ -99,6 +128,12 @@ export default {
                                         path: 'select_team',
                                         getComponents: (location, callback) => {
                                             System.import('components/select_team/select_team.jsx').then(RouteUtils.importComponentSuccess(callback));
+                                        }
+                                    },
+                                    {
+                                        path: '*authorize',
+                                        getComponents: (location, callback) => {
+                                            System.import('components/authorize.jsx').then(RouteUtils.importComponentSuccess(callback));
                                         }
                                     },
                                     createTeamRoute

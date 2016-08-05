@@ -70,7 +70,6 @@ var flagEmail string
 var flagPassword string
 var flagTeamName string
 var flagChannelName string
-var flagSiteURL string
 var flagConfirmBackup string
 var flagRole string
 var flagRunCmds bool
@@ -150,11 +149,19 @@ func main() {
 			complianceI.StartComplianceDailyJob()
 		}
 
+		if einterfaces.GetClusterInterface() != nil {
+			einterfaces.GetClusterInterface().StartInterNodeCommunication()
+		}
+
 		// wait for kill signal before attempting to gracefully shutdown
 		// the running service
 		c := make(chan os.Signal)
 		signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 		<-c
+
+		if einterfaces.GetClusterInterface() != nil {
+			einterfaces.GetClusterInterface().StopInterNodeCommunication()
+		}
 
 		api.StopServer()
 	}
@@ -290,7 +297,6 @@ func parseCmds() {
 	flag.StringVar(&flagPassword, "password", "", "")
 	flag.StringVar(&flagTeamName, "team_name", "", "")
 	flag.StringVar(&flagChannelName, "channel_name", "", "")
-	flag.StringVar(&flagSiteURL, "site_url", "", "")
 	flag.StringVar(&flagConfirmBackup, "confirm_backup", "", "")
 	flag.StringVar(&flagFromAuth, "from_auth", "", "")
 	flag.StringVar(&flagToAuth, "to_auth", "", "")
@@ -863,16 +869,8 @@ func cmdInviteUser() {
 			os.Exit(1)
 		}
 
-		if len(flagSiteURL) == 0 {
-			fmt.Fprintln(os.Stderr, "flag needs an argument: -site_url")
-			flag.Usage()
-			os.Exit(1)
-		}
-
-		// basic validation of the URL format
-		if _, err := url.ParseRequestURI(flagSiteURL); err != nil {
-			fmt.Fprintln(os.Stderr, "-site_url flag is invalid. It should look like http://example.com")
-			flag.Usage()
+		if len(*utils.Cfg.ServiceSettings.SiteURL) == 0 {
+			fmt.Fprintln(os.Stderr, "SiteURL must be specified in config.json")
 			os.Exit(1)
 		}
 
@@ -894,7 +892,6 @@ func cmdInviteUser() {
 
 		invites := []string{flagEmail}
 		c := getMockContext()
-		c.SetSiteURL(strings.TrimSuffix(flagSiteURL, "/"))
 		api.InviteMembers(c, team, user, invites)
 
 		os.Exit(0)
@@ -1590,8 +1587,6 @@ FLAGS:
 
     -team_name="name"                 The team name used in other commands
 
-    -site_url="url"										The site URL used in other commands
-
     -role="system_admin"              The role used in other commands
                                       valid values are
                                         "" - The empty role is basic user
@@ -1611,9 +1606,9 @@ COMMANDS:
             platform -create_user -team_name="name" -email="user@example.com" -password="mypassword" -username="user"
 
     -invite_user                      Invites a user to a team by email. It requires the -team_name
-                                      , -email and -site_url flags.
+                                      and -email flags.
         Example:
-				platform -invite_user -team_name="name" -email="user@example.com" -site_url="https://mattermost.example.com"
+				platform -invite_user -team_name="name" -email="user@example.com"
 
 -leave_team                           Removes a user from a team.  It requires the -team_name
                                       and -email.

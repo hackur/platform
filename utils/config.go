@@ -4,6 +4,7 @@
 package utils
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -26,7 +27,7 @@ const (
 
 var Cfg *model.Config = &model.Config{}
 var CfgDiagnosticId = ""
-var CfgLastModified int64 = 0
+var CfgHash = ""
 var CfgFileName string = ""
 var ClientCfg map[string]string = map[string]string{}
 
@@ -157,11 +158,10 @@ func LoadConfig(fileName string) {
 			map[string]interface{}{"Filename": fileName, "Error": err.Error()}))
 	}
 
-	if info, err := file.Stat(); err != nil {
+	if _, err := file.Stat(); err != nil {
 		panic(T("utils.config.load_config.getting.panic",
 			map[string]interface{}{"Filename": fileName, "Error": err.Error()}))
 	} else {
-		CfgLastModified = info.ModTime().Unix()
 		CfgFileName = fileName
 	}
 
@@ -185,7 +185,8 @@ func LoadConfig(fileName string) {
 	}
 
 	Cfg = &config
-	ClientCfg = getClientConfig(Cfg)
+	CfgHash = fmt.Sprintf("%x", md5.Sum([]byte(Cfg.ToJson())))
+	RegenerateClientConfig()
 
 	// Actions that need to run every time the config is loaded
 	if ldapI := einterfaces.GetLdapInterface(); ldapI != nil {
@@ -198,6 +199,10 @@ func LoadConfig(fileName string) {
 	}
 }
 
+func RegenerateClientConfig() {
+	ClientCfg = getClientConfig(Cfg)
+}
+
 func getClientConfig(c *model.Config) map[string]string {
 	props := make(map[string]string)
 
@@ -208,6 +213,7 @@ func getClientConfig(c *model.Config) map[string]string {
 	props["BuildHashEnterprise"] = model.BuildHashEnterprise
 	props["BuildEnterpriseReady"] = model.BuildEnterpriseReady
 
+	props["SiteURL"] = *c.ServiceSettings.SiteURL
 	props["SiteName"] = c.TeamSettings.SiteName
 	props["EnableTeamCreation"] = strconv.FormatBool(c.TeamSettings.EnableTeamCreation)
 	props["EnableUserCreation"] = strconv.FormatBool(c.TeamSettings.EnableUserCreation)
@@ -238,7 +244,6 @@ func getClientConfig(c *model.Config) map[string]string {
 	props["RequireEmailVerification"] = strconv.FormatBool(c.EmailSettings.RequireEmailVerification)
 
 	props["EnableSignUpWithGitLab"] = strconv.FormatBool(c.GitLabSettings.Enable)
-	props["EnableSignUpWithGoogle"] = strconv.FormatBool(c.GoogleSettings.Enable)
 
 	props["ShowEmailAddress"] = strconv.FormatBool(c.PrivacySettings.ShowEmailAddress)
 
@@ -272,6 +277,7 @@ func getClientConfig(c *model.Config) map[string]string {
 		if *License.Features.CustomBrand {
 			props["EnableCustomBrand"] = strconv.FormatBool(*c.TeamSettings.EnableCustomBrand)
 			props["CustomBrandText"] = *c.TeamSettings.CustomBrandText
+			props["CustomDescriptionText"] = *c.TeamSettings.CustomDescriptionText
 		}
 
 		if *License.Features.LDAP {
@@ -291,6 +297,18 @@ func getClientConfig(c *model.Config) map[string]string {
 		if *License.Features.SAML {
 			props["EnableSaml"] = strconv.FormatBool(*c.SamlSettings.Enable)
 			props["SamlLoginButtonText"] = *c.SamlSettings.LoginButtonText
+		}
+
+		if *License.Features.Cluster {
+			props["EnableCluster"] = strconv.FormatBool(*c.ClusterSettings.Enable)
+		}
+
+		if *License.Features.GoogleSSO {
+			props["EnableSignUpWithGoogle"] = strconv.FormatBool(c.GoogleSettings.Enable)
+		}
+
+		if *License.Features.Office365SSO {
+			props["EnableSignUpWithOffice365"] = strconv.FormatBool(c.Office365Settings.Enable)
 		}
 
 		if *License.Features.PasswordRequirements {

@@ -1,5 +1,6 @@
 {
     "ServiceSettings": {
+        "SiteURL": "",
         "ListenAddress": ":8065",
         "MaximumLoginAttempts": 10,
         "SegmentDeveloperKey": "",
@@ -37,6 +38,7 @@
         "RestrictTeamNames": true,
         "EnableCustomBrand": false,
         "CustomBrandText": "",
+        "CustomDescriptionText": "",
         "RestrictDirectMessage": "any",
         "RestrictTeamInvite": "all",
         "RestrictPublicChannelManagement": "all",
@@ -142,10 +144,19 @@
         "Enable": false,
         "Secret": "",
         "Id": "",
-        "Scope": "",
-        "AuthEndpoint": "",
-        "TokenEndpoint": "",
-        "UserApiEndpoint": ""
+        "Scope": "profile email",
+        "AuthEndpoint": "https://accounts.google.com/o/oauth2/v2/auth",
+        "TokenEndpoint": "https://www.googleapis.com/oauth2/v4/token",
+        "UserApiEndpoint": "https://www.googleapis.com/plus/v1/people/me"
+    },
+    "Office365Settings": {
+        "Enable": false,
+        "Secret": "",
+        "Id": "",
+        "Scope": "User.Read",
+        "AuthEndpoint": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        "TokenEndpoint": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        "UserApiEndpoint": "https://graph.microsoft.com/v1.0/me"
     },
     "LdapSettings": {
         "Enable": false,
@@ -200,5 +211,10 @@
         "AppDownloadLink": "https://about.mattermost.com/downloads/",
         "AndroidAppDownloadLink": "https://about.mattermost.com/mattermost-android-app/",
         "IosAppDownloadLink": "https://about.mattermost.com/mattermost-ios-app/"
+    },
+    "ClusterSettings": {
+        "Enable": false,
+        "InterNodeListenAddress": ":8075",
+        "InterNodeUrls": []
     }
 }

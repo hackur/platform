@@ -231,8 +231,13 @@ export default class SignupUserComplete extends React.Component {
     finishSignup() {
         GlobalActions.emitInitialLoad(
             () => {
+                const query = this.props.location.query;
                 GlobalActions.loadDefaultLocale();
-                browserHistory.push('/select_team');
+                if (query.redirect_to) {
+                    browserHistory.push(query.redirect_to);
+                } else {
+                    browserHistory.push('/select_team');
+                }
             }
         );
     }
@@ -250,7 +255,12 @@ export default class SignupUserComplete extends React.Component {
 
                 GlobalActions.emitInitialLoad(
                     () => {
-                        browserHistory.push('/select_team');
+                        const query = this.props.location.query;
+                        if (query.redirect_to) {
+                            browserHistory.push(query.redirect_to);
+                        } else {
+                            browserHistory.push('/select_team');
+                        }
                     }
                 );
             },
@@ -594,6 +604,24 @@ export default class SignupUserComplete extends React.Component {
            );
         }
 
+        if (global.window.mm_config.EnableSignUpWithOffice365 === 'true') {
+            signupMessage.push(
+                <a
+                    className='btn btn-custom-login office365'
+                    key='office365'
+                    href={Client.getOAuthRoute() + '/office365/signup' + window.location.search + '&team=' + encodeURIComponent(this.state.teamName)}
+                >
+                    <span className='icon'/>
+                    <span>
+                        <FormattedMessage
+                            id='signup_user_completed.office365'
+                            defaultMessage='with Office 365'
+                        />
+                    </span>
+                </a>
+           );
+        }
+
         if (global.window.mm_config.EnableSaml === 'true' && global.window.mm_license.IsLicensed === 'true' && global.window.mm_license.SAML === 'true') {
             signupMessage.push(
                 <a
@@ -747,6 +775,18 @@ export default class SignupUserComplete extends React.Component {
             ldapSignup = null;
         }
 
+        let description = null;
+        if (global.window.mm_license.IsLicensed === 'true' && global.window.mm_license.CustomBrand === 'true' && global.window.mm_config.EnableCustomBrand === 'true') {
+            description = global.window.mm_config.CustomDescriptionText;
+        } else {
+            description = (
+                <FormattedMessage
+                    id='web.root.signup_info'
+                    defaultMessage='All team communication in one place, searchable and accessible anywhere'
+                />
+            );
+        }
+
         return (
             <div>
                 <div className='signup-header'>
@@ -765,9 +805,7 @@ export default class SignupUserComplete extends React.Component {
                         />
                         <h1>{global.window.mm_config.SiteName}</h1>
                         <h4 className='color--light'>
-                            <FormattedMessage
-                                id='web.root.singup_info'
-                            />
+                            {description}
                         </h4>
                         <h4 className='color--light'>
                             <FormattedMessage

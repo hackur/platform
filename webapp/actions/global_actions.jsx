@@ -190,7 +190,8 @@ export function emitPostFocusRightHandSideFromSearch(post, isMentionSearch) {
             AppDispatcher.handleServerAction({
                 type: ActionTypes.RECEIVED_POST_SELECTED,
                 postId: Utils.getRootId(post),
-                from_search: SearchStore.getSearchTerm()
+                from_search: SearchStore.getSearchTerm(),
+                from_flagged_posts: SearchStore.getIsFlaggedPosts()
             });
 
             AppDispatcher.handleServerAction({
@@ -304,13 +305,6 @@ export function showInviteMemberModal() {
 export function showLeaveTeamModal() {
     AppDispatcher.handleViewAction({
         type: ActionTypes.TOGGLE_LEAVE_TEAM_MODAL,
-        value: true
-    });
-}
-
-export function showRegisterAppModal() {
-    AppDispatcher.handleViewAction({
-        type: ActionTypes.TOGGLE_REGISTER_APP_MODAL,
         value: true
     });
 }

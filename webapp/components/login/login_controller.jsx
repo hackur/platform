@@ -146,11 +146,12 @@ export default class LoginController extends React.Component {
             token,
             () => {
                 // check for query params brought over from signup_user_complete
-                if (this.props.location.query.id || this.props.location.query.h) {
+                const query = this.props.location.query;
+                if (query.id || query.h) {
                     Client.addUserToTeamFromInvite(
-                        this.props.location.query.d,
-                        this.props.location.query.h,
-                        this.props.location.query.id,
+                        query.d,
+                        query.h,
+                        query.id,
                         () => {
                             this.finishSignin();
                         },
@@ -200,8 +201,13 @@ export default class LoginController extends React.Component {
     finishSignin() {
         GlobalActions.emitInitialLoad(
             () => {
+                const query = this.props.location.query;
                 GlobalActions.loadDefaultLocale();
-                browserHistory.push('/select_team');
+                if (query.redirect_to) {
+                    browserHistory.push(query.redirect_to);
+                } else {
+                    browserHistory.push('/select_team');
+                }
             }
         );
     }
@@ -277,7 +283,7 @@ export default class LoginController extends React.Component {
     }
 
     createLoginOptions() {
-        const extraParam = Utils.getUrlParameter('extra');
+        const extraParam = this.props.location.query.extra;
         let extraBox = '';
         if (extraParam) {
             if (extraParam === Constants.SIGNIN_CHANGE) {
@@ -328,6 +334,7 @@ export default class LoginController extends React.Component {
         const ldapEnabled = this.state.ldapEnabled;
         const gitlabSigninEnabled = global.window.mm_config.EnableSignUpWithGitLab === 'true';
         const googleSigninEnabled = global.window.mm_config.EnableSignUpWithGoogle === 'true';
+        const office365SigninEnabled = global.window.mm_config.EnableSignUpWithOffice365 === 'true';
         const samlSigninEnabled = this.state.samlEnabled;
         const usernameSigninEnabled = this.state.usernameSigninEnabled;
         const emailSigninEnabled = this.state.emailSigninEnabled;
@@ -400,7 +407,7 @@ export default class LoginController extends React.Component {
                             defaultMessage="Don't have an account? "
                         />
                         <Link
-                            to={'/signup_user_complete'}
+                            to={'/signup_user_complete' + this.props.location.search}
                             className='signup-team-login'
                         >
                             <FormattedMessage
@@ -429,7 +436,7 @@ export default class LoginController extends React.Component {
             );
         }
 
-        if ((emailSigninEnabled || usernameSigninEnabled || ldapEnabled) && (gitlabSigninEnabled || googleSigninEnabled || samlSigninEnabled)) {
+        if ((emailSigninEnabled || usernameSigninEnabled || ldapEnabled) && (gitlabSigninEnabled || googleSigninEnabled || samlSigninEnabled || office365SigninEnabled)) {
             loginControls.push(
                 <div
                     key='divider'
@@ -472,10 +479,10 @@ export default class LoginController extends React.Component {
 
         if (googleSigninEnabled) {
             loginControls.push(
-                <Link
+                <a
                     className='btn btn-custom-login google'
                     key='google'
-                    to={Client.getOAuthRoute() + '/google/login'}
+                    href={Client.getOAuthRoute() + '/google/login' + this.props.location.search}
                 >
                     <span className='icon'/>
                     <span>
@@ -484,7 +491,25 @@ export default class LoginController extends React.Component {
                             defaultMessage='Google Apps'
                         />
                     </span>
-                </Link>
+                </a>
+            );
+        }
+
+        if (office365SigninEnabled) {
+            loginControls.push(
+                <a
+                    className='btn btn-custom-login office365'
+                    key='office365'
+                    href={Client.getOAuthRoute() + '/office365/login' + this.props.location.search}
+                >
+                    <span className='icon'/>
+                    <span>
+                        <FormattedMessage
+                            id='login.office365'
+                            defaultMessage='Office 365'
+                        />
+                    </span>
+                </a>
             );
         }
 
@@ -530,6 +555,18 @@ export default class LoginController extends React.Component {
             }
         }
 
+        let description = null;
+        if (global.window.mm_license.IsLicensed === 'true' && global.window.mm_license.CustomBrand === 'true' && global.window.mm_config.EnableCustomBrand === 'true') {
+            description = global.window.mm_config.CustomDescriptionText;
+        } else {
+            description = (
+                <FormattedMessage
+                    id='web.root.signup_info'
+                    defaultMessage='All team communication in one place, searchable and accessible anywhere'
+                />
+            );
+        }
+
         return (
             <div>
                 <ErrorBar/>
@@ -545,9 +582,7 @@ export default class LoginController extends React.Component {
                         <div className='signup__content'>
                             <h1>{global.window.mm_config.SiteName}</h1>
                             <h4 className='color--light'>
-                                <FormattedMessage
-                                    id='web.root.singup_info'
-                                />
+                                {description}
                             </h4>
                             {content}
                         </div>

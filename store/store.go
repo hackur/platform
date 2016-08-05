@@ -112,6 +112,7 @@ type PostStore interface {
 	Delete(postId string, time int64) StoreChannel
 	PermanentDeleteByUser(userId string) StoreChannel
 	GetPosts(channelId string, offset int, limit int) StoreChannel
+	GetFlaggedPosts(userId string, offset int, limit int) StoreChannel
 	GetPostsBefore(channelId string, postId string, numPosts int, offset int) StoreChannel
 	GetPostsAfter(channelId string, postId string, numPosts int, offset int) StoreChannel
 	GetPostsSince(channelId string, time int64) StoreChannel
@@ -186,13 +187,17 @@ type OAuthStore interface {
 	UpdateApp(app *model.OAuthApp) StoreChannel
 	GetApp(id string) StoreChannel
 	GetAppByUser(userId string) StoreChannel
+	GetApps() StoreChannel
+	DeleteApp(id string) StoreChannel
 	SaveAuthData(authData *model.AuthData) StoreChannel
 	GetAuthData(code string) StoreChannel
 	RemoveAuthData(code string) StoreChannel
 	PermanentDeleteAuthDataByUser(userId string) StoreChannel
 	SaveAccessData(accessData *model.AccessData) StoreChannel
+	UpdateAccessData(accessData *model.AccessData) StoreChannel
 	GetAccessData(token string) StoreChannel
-	GetAccessDataByAuthCode(authCode string) StoreChannel
+	GetAccessDataByRefreshToken(token string) StoreChannel
+	GetPreviousAccessData(userId, clientId string) StoreChannel
 	RemoveAccessData(token string) StoreChannel
 }
 

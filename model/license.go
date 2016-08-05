@@ -36,7 +36,9 @@ type Features struct {
 	LDAP                 *bool `json:"ldap"`
 	MFA                  *bool `json:"mfa"`
 	GoogleSSO            *bool `json:"google_sso"`
+	Office365SSO         *bool `json:"office365_sso"`
 	Compliance           *bool `json:"compliance"`
+	Cluster              *bool `json:"cluster"`
 	CustomBrand          *bool `json:"custom_brand"`
 	MHPNS                *bool `json:"mhpns"`
 	SAML                 *bool `json:"saml"`
@@ -67,12 +69,22 @@ func (f *Features) SetDefaults() {
 
 	if f.GoogleSSO == nil {
 		f.GoogleSSO = new(bool)
-		*f.GoogleSSO = *f.FutureFeatures
+		*f.GoogleSSO = true
+	}
+
+	if f.Office365SSO == nil {
+		f.Office365SSO = new(bool)
+		*f.Office365SSO = true
 	}
 
 	if f.Compliance == nil {
 		f.Compliance = new(bool)
 		*f.Compliance = *f.FutureFeatures
+	}
+
+	if f.Cluster == nil {
+		f.Cluster = new(bool)
+		*f.Cluster = *f.FutureFeatures
 	}
 
 	if f.CustomBrand == nil {

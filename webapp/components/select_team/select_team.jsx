@@ -3,6 +3,7 @@
 
 import UserStore from 'stores/user_store.jsx';
 import TeamStore from 'stores/team_store.jsx';
+import * as UserAgent from 'utils/user_agent.jsx';
 import * as Utils from 'utils/utils.jsx';
 import ErrorBar from 'components/error_bar.jsx';
 import LoadingScreen from 'components/loading_screen.jsx';
@@ -176,7 +177,7 @@ export default class SelectTeam extends React.Component {
         }
 
         let teamSignUp;
-        if (isSystemAdmin || (global.window.mm_config.EnableTeamCreation === 'true' && !Utils.isMobileApp())) {
+        if (isSystemAdmin || (global.window.mm_config.EnableTeamCreation === 'true' && !UserAgent.isMobileApp())) {
             teamSignUp = (
                 <div className='margin--extra'>
                     <Link
@@ -212,6 +213,18 @@ export default class SelectTeam extends React.Component {
             );
         }
 
+        let description = null;
+        if (global.window.mm_license.IsLicensed === 'true' && global.window.mm_license.CustomBrand === 'true' && global.window.mm_config.EnableCustomBrand === 'true') {
+            description = global.window.mm_config.CustomDescriptionText;
+        } else {
+            description = (
+                <FormattedMessage
+                    id='web.root.signup_info'
+                    defaultMessage='All team communication in one place, searchable and accessible anywhere'
+                />
+            );
+        }
+
         return (
             <div>
                 <ErrorBar/>
@@ -234,9 +247,7 @@ export default class SelectTeam extends React.Component {
                         />
                         <h1>{global.window.mm_config.SiteName}</h1>
                         <h4 className='color--light'>
-                            <FormattedMessage
-                                id='web.root.singup_info'
-                            />
+                            {description}
                         </h4>
                         {content}
                         {openContent}

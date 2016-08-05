@@ -11,6 +11,7 @@ import * as GlobalActions from 'actions/global_actions.jsx';
 
 import {createChannelIntroMessage} from 'utils/channel_intro_messages.jsx';
 
+import * as UserAgent from 'utils/user_agent.jsx';
 import * as Utils from 'utils/utils.jsx';
 import * as PostUtils from 'utils/post_utils.jsx';
 import DelayedAction from 'utils/delayed_action.jsx';
@@ -283,6 +284,11 @@ export default class PostList extends React.Component {
                 }
             }
 
+            let isFlagged = false;
+            if (this.props.flaggedPosts) {
+                isFlagged = this.props.flaggedPosts.get(post.id) === 'true';
+            }
+
             const postCtl = (
                 <Post
                     key={keyPrefix + 'postKey'}
@@ -304,6 +310,7 @@ export default class PostList extends React.Component {
                     previewCollapsed={this.props.previewsCollapsed}
                     useMilitaryTime={this.props.useMilitaryTime}
                     emojis={this.props.emojis}
+                    isFlagged={isFlagged}
                 />
             );
 
@@ -336,7 +343,7 @@ export default class PostList extends React.Component {
 
                 // Temporary fix to solve ie11 rendering issue
                 let newSeparatorId = '';
-                if (!Utils.isBrowserIE()) {
+                if (!UserAgent.isInternetExplorer()) {
                     newSeparatorId = 'new_message_' + post.id;
                 }
                 postCtls.push(
@@ -571,5 +578,6 @@ PostList.propTypes = {
     previewsCollapsed: React.PropTypes.string,
     useMilitaryTime: React.PropTypes.bool.isRequired,
     isFocusPost: React.PropTypes.bool,
-    emojis: React.PropTypes.object.isRequired
+    emojis: React.PropTypes.object.isRequired,
+    flaggedPosts: React.PropTypes.object
 };

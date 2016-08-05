@@ -6,6 +6,7 @@ package model
 import (
 	"encoding/json"
 	"io"
+	"net/url"
 )
 
 const (
@@ -22,8 +23,9 @@ const (
 	PASSWORD_MAXIMUM_LENGTH = 64
 	PASSWORD_MINIMUM_LENGTH = 5
 
-	SERVICE_GITLAB = "gitlab"
-	SERVICE_GOOGLE = "google"
+	SERVICE_GITLAB    = "gitlab"
+	SERVICE_GOOGLE    = "google"
+	SERVICE_OFFICE365 = "office365"
 
 	WEBSERVER_MODE_REGULAR  = "regular"
 	WEBSERVER_MODE_GZIP     = "gzip"
@@ -49,6 +51,7 @@ const (
 )
 
 type ServiceSettings struct {
+	SiteURL                           *string
 	ListenAddress                     string
 	MaximumLoginAttempts              int
 	SegmentDeveloperKey               string
@@ -75,6 +78,12 @@ type ServiceSettings struct {
 	WebserverMode                     *string
 	EnableCustomEmoji                 *bool
 	RestrictCustomEmojiCreation       *string
+}
+
+type ClusterSettings struct {
+	Enable                 *bool
+	InterNodeListenAddress *string
+	InterNodeUrls          []string
 }
 
 type SSOSettings struct {
@@ -191,6 +200,7 @@ type TeamSettings struct {
 	RestrictTeamNames                *bool
 	EnableCustomBrand                *bool
 	CustomBrandText                  *string
+	CustomDescriptionText            *string
 	RestrictDirectMessage            *string
 	RestrictTeamInvite               *string
 	RestrictPublicChannelManagement  *string
@@ -287,11 +297,13 @@ type Config struct {
 	SupportSettings      SupportSettings
 	GitLabSettings       SSOSettings
 	GoogleSettings       SSOSettings
+	Office365Settings    SSOSettings
 	LdapSettings         LdapSettings
 	ComplianceSettings   ComplianceSettings
 	LocalizationSettings LocalizationSettings
 	SamlSettings         SamlSettings
 	NativeAppSettings    NativeAppSettings
+	ClusterSettings      ClusterSettings
 }
 
 func (o *Config) ToJson() string {
@@ -309,6 +321,8 @@ func (o *Config) GetSSOService(service string) *SSOSettings {
 		return &o.GitLabSettings
 	case SERVICE_GOOGLE:
 		return &o.GoogleSettings
+	case SERVICE_OFFICE365:
+		return &o.Office365Settings
 	}
 
 	return nil
@@ -356,6 +370,11 @@ func (o *Config) SetDefaults() {
 
 	if len(o.EmailSettings.PasswordResetSalt) == 0 {
 		o.EmailSettings.PasswordResetSalt = NewRandomString(32)
+	}
+
+	if o.ServiceSettings.SiteURL == nil {
+		o.ServiceSettings.SiteURL = new(string)
+		*o.ServiceSettings.SiteURL = ""
 	}
 
 	if o.ServiceSettings.EnableDeveloper == nil {
@@ -416,6 +435,11 @@ func (o *Config) SetDefaults() {
 	if o.TeamSettings.CustomBrandText == nil {
 		o.TeamSettings.CustomBrandText = new(string)
 		*o.TeamSettings.CustomBrandText = ""
+	}
+
+	if o.TeamSettings.CustomDescriptionText == nil {
+		o.TeamSettings.CustomDescriptionText = new(string)
+		*o.TeamSettings.CustomDescriptionText = ""
 	}
 
 	if o.TeamSettings.EnableOpenServer == nil {
@@ -489,7 +513,7 @@ func (o *Config) SetDefaults() {
 
 	if o.SupportSettings.TermsOfServiceLink == nil {
 		o.SupportSettings.TermsOfServiceLink = new(string)
-		*o.SupportSettings.TermsOfServiceLink = ""
+		*o.SupportSettings.TermsOfServiceLink = "https://about.mattermost.com/default-terms/"
 	}
 
 	if !IsSafeLink(o.SupportSettings.PrivacyPolicyLink) {
@@ -690,6 +714,20 @@ func (o *Config) SetDefaults() {
 		*o.ServiceSettings.RestrictCustomEmojiCreation = RESTRICT_EMOJI_CREATION_ALL
 	}
 
+	if o.ClusterSettings.InterNodeListenAddress == nil {
+		o.ClusterSettings.InterNodeListenAddress = new(string)
+		*o.ClusterSettings.InterNodeListenAddress = ":8075"
+	}
+
+	if o.ClusterSettings.Enable == nil {
+		o.ClusterSettings.Enable = new(bool)
+		*o.ClusterSettings.Enable = false
+	}
+
+	if o.ClusterSettings.InterNodeUrls == nil {
+		o.ClusterSettings.InterNodeUrls = []string{}
+	}
+
 	if o.ComplianceSettings.Enable == nil {
 		o.ComplianceSettings.Enable = new(bool)
 		*o.ComplianceSettings.Enable = false
@@ -820,6 +858,16 @@ func (o *Config) IsValid() *AppError {
 
 	if o.ServiceSettings.MaximumLoginAttempts <= 0 {
 		return NewLocAppError("Config.IsValid", "model.config.is_valid.login_attempts.app_error", nil, "")
+	}
+
+	if len(*o.ServiceSettings.SiteURL) != 0 {
+		if _, err := url.ParseRequestURI(*o.ServiceSettings.SiteURL); err != nil {
+			return NewLocAppError("Config.IsValid", "model.config.is_valid.site_url.app_error", nil, "")
+		}
+	}
+
+	if len(o.ServiceSettings.ListenAddress) == 0 {
+		return NewLocAppError("Config.IsValid", "model.config.is_valid.listen_address.app_error", nil, "")
 	}
 
 	if len(o.ServiceSettings.ListenAddress) == 0 {

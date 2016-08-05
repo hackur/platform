@@ -14,13 +14,13 @@ import (
 	"github.com/gorilla/mux"
 	goi18n "github.com/nicksnyder/go-i18n/i18n"
 
+	"github.com/mattermost/platform/einterfaces"
 	"github.com/mattermost/platform/model"
 	"github.com/mattermost/platform/store"
 	"github.com/mattermost/platform/utils"
 )
 
 var sessionCache *utils.Cache = utils.NewLru(model.SESSION_CACHE_SIZE)
-var statusCache *utils.Cache = utils.NewLru(model.STATUS_CACHE_SIZE)
 
 var allowedMethods []string = []string{
 	"POST",
@@ -39,7 +39,6 @@ type Context struct {
 	Err          *model.AppError
 	teamURLValid bool
 	teamURL      string
-	siteURL      string
 	T            goi18n.TranslateFunc
 	Locale       string
 	TeamId       string
@@ -67,6 +66,10 @@ func ApiUserRequiredActivity(h func(*Context, http.ResponseWriter, *http.Request
 
 func UserRequired(h func(*Context, http.ResponseWriter, *http.Request)) http.Handler {
 	return &handler{h, true, false, false, false, false, false}
+}
+
+func AppHandlerTrustRequester(h func(*Context, http.ResponseWriter, *http.Request)) http.Handler {
+	return &handler{h, false, false, false, false, false, true}
 }
 
 func ApiAdminSystemRequired(h func(*Context, http.ResponseWriter, *http.Request)) http.Handler {
@@ -103,7 +106,6 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c.RequestId = model.NewId()
 	c.IpAddress = GetIpAddress(r)
 	c.TeamId = mux.Vars(r)["team_id"]
-	h.isApi = IsApiCall(r)
 
 	token := ""
 	isTokenFromQueryString := false
@@ -139,16 +141,22 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		isTokenFromQueryString = true
 	}
 
-	protocol := GetProtocol(r)
-	c.SetSiteURL(protocol + "://" + r.Host)
+	// if the site url in the config isn't specified, infer if from this request and write it back to the config
+	if *utils.Cfg.ServiceSettings.SiteURL == "" {
+		*utils.Cfg.ServiceSettings.SiteURL = GetProtocol(r) + "://" + r.Host
+		utils.RegenerateClientConfig()
+	}
 
 	w.Header().Set(model.HEADER_REQUEST_ID, c.RequestId)
-	w.Header().Set(model.HEADER_VERSION_ID, fmt.Sprintf("%v.%v", model.CurrentVersion, utils.CfgLastModified))
+	w.Header().Set(model.HEADER_VERSION_ID, fmt.Sprintf("%v.%v", model.CurrentVersion, utils.CfgHash))
+	if einterfaces.GetClusterInterface() != nil {
+		w.Header().Set(model.HEADER_CLUSTER_ID, einterfaces.GetClusterInterface().GetClusterId())
+	}
 
-	// Instruct the browser not to display us in an iframe for anti-clickjacking
+	// Instruct the browser not to display us in an iframe unless is the same origin for anti-clickjacking
 	if !h.isApi {
-		w.Header().Set("X-Frame-Options", "DENY")
-		w.Header().Set("Content-Security-Policy", "frame-ancestors 'none'")
+		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+		w.Header().Set("Content-Security-Policy", "frame-ancestors 'self'")
 	} else {
 		// All api response bodies will be JSON formatted by default
 		w.Header().Set("Content-Type", "application/json")
@@ -180,7 +188,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		c.Path = r.URL.Path
 	} else {
 		splitURL := strings.Split(r.URL.Path, "/")
-		c.setTeamURL(protocol+"://"+r.Host+"/"+splitURL[1], true)
+		c.setTeamURL(c.GetSiteURL()+"/"+splitURL[1], true)
 		c.Path = "/" + strings.Join(splitURL[2:], "/")
 	}
 
@@ -431,10 +439,6 @@ func (c *Context) SetTeamURLFromSession() {
 	}
 }
 
-func (c *Context) SetSiteURL(url string) {
-	c.siteURL = url
-}
-
 func (c *Context) GetTeamURLFromTeam(team *model.Team) string {
 	return c.GetSiteURL() + "/" + team.Name
 }
@@ -450,7 +454,7 @@ func (c *Context) GetTeamURL() string {
 }
 
 func (c *Context) GetSiteURL() string {
-	return c.siteURL
+	return *utils.Cfg.ServiceSettings.SiteURL
 }
 
 func IsApiCall(r *http.Request) bool {
@@ -552,6 +556,10 @@ func RemoveAllSessionsForUserId(userId string) {
 				sessionCache.Remove(key)
 			}
 		}
+	}
+
+	if einterfaces.GetClusterInterface() != nil {
+		einterfaces.GetClusterInterface().RemoveAllSessionsForUserId(userId)
 	}
 }
 

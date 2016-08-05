@@ -3,6 +3,7 @@
 
 import $ from 'jquery';
 
+import TeamStore from 'stores/team_store.jsx';
 import UserStore from 'stores/user_store.jsx';
 import {Popover, Overlay} from 'react-bootstrap';
 import * as Utils from 'utils/utils.jsx';
@@ -36,7 +37,7 @@ export default class PopoverListMembers extends React.Component {
         Utils.openDirectChannelToUser(
             teammate,
             (channel, channelAlreadyExisted) => {
-                browserHistory.push(Utils.getTeamURLNoOriginFromAddressBar() + '/channels/' + channel.name);
+                browserHistory.push(TeamStore.getCurrentTeamRelativeUrl() + '/channels/' + channel.name);
                 if (channelAlreadyExisted) {
                     this.closePopover();
                 }
@@ -88,18 +89,24 @@ export default class PopoverListMembers extends React.Component {
                 }
 
                 if (name) {
+                    if (!m.status) {
+                        var status = UserStore.getStatus(m.id);
+                        m.status = status ? 'status-' + status : '';
+                    }
                     popoverHtml.push(
                         <div
                             className='more-modal__row'
                             key={'popover-member-' + i}
                         >
 
-                            <img
-                                className='more-modal__image'
-                                width='26px'
-                                height='26px'
-                                src={`${Client.getUsersRoute()}/${m.id}/image?time=${m.update_at}`}
-                            />
+                            <span className={`more-modal__image-wrapper ${m.status}`}>
+                                <img
+                                    className='more-modal__image'
+                                    width='26px'
+                                    height='26px'
+                                    src={`${Client.getUsersRoute()}/${m.id}/image?time=${m.update_at}`}
+                                />
+                            </span>
                             <div className='more-modal__details'>
                                 <div
                                     className='more-modal__name'
